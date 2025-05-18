@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Team Tasks</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Chewy&display=swap" rel="stylesheet">
+  <style>
+    .chewy-font {
+      font-family: 'Chewy', cursive;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+  <!-- Navbar -->
+  <header class="flex justify-between items-center p-6 shadow bg-white sticky top-0 z-50">
+    <div class="text-2xl font-bold flex items-center gap-2">
+      📝 <span class="chewy-font">TeamTasks</span>
+    </div>
+    <nav class="flex gap-6 text-sm">
+      <a href="#" id="dashboardBtn" class="hover:text-black font-semibold">Dashboard</a>
+      <a href="#" id="teamBtn" class="hover:text-black">Team</a>
+      <a href="#" id="projectsBtn" class="hover:text-black">Projects</a>
+      <a href="#" class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800">Login</a>
+    </nav>
+  </header>
+
+  <!-- Main Content Wrapper -->
+  <main class="px-6 md:px-20 py-12 max-w-4xl mx-auto">
+
+    <!-- Task Manager Section -->
+    <section id="dashboardSection">
+      <div class="bg-white shadow-lg p-6 rounded-xl">
+        <h1 class="text-4xl chewy-font text-center mb-6 text-gray-900">To-Do List</h1>
+
+        <!-- Filters and Search -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
+          <div class="flex gap-2">
+            <button data-filter="all" class="filter-btn bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded">All</button>
+            <button data-filter="pending" class="filter-btn bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded">Pending</button>
+            <button data-filter="completed" class="filter-btn bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded">Completed</button>
+          </div>
+          <input type="text" id="searchInput" placeholder="Search tasks..." class="p-2 border rounded w-full md:w-64" />
+        </div>
+
+        <!-- Add Task Form -->
+        <form id="taskForm" class="flex flex-col gap-3 mb-6">
+          <input type="text" id="taskTitle" placeholder="Task Title" class="p-2 border rounded" required />
+          <select id="assignedTo" class="p-2 border rounded" required></select>
+
+          <!-- New member input -->
+          <div class="flex gap-2 items-start flex-col sm:flex-row sm:items-center">
+            <input type="text" id="newMemberInput" placeholder="Add new member" class="p-2 border rounded flex-grow" />
+            <button type="button" id="addMemberBtn" class="bg-green-500 text-white px-4 rounded hover:bg-green-600">Add</button>
+          </div>
+
+          <select id="priority" class="p-2 border rounded" required>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+          </select>
+          <button type="submit" class="bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Add Task</button>
+        </form>
+
+        <!-- Task List -->
+        <div id="taskList" class="space-y-3"></div>
+      </div>
+    </section>
+
+    <!-- Team Members Section -->
+    <section id="teamSection" class="hidden">
+      <div class="bg-white shadow-lg p-6 rounded-xl">
+        <h1 class="text-4xl chewy-font text-center mb-6 text-gray-900">Our Team</h1>
+        <div id="teamMembersContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6"></div>
+      </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="projectsSection" class="hidden">
+      <div class="bg-white shadow-lg p-6 rounded-xl">
+        <h1 class="text-4xl chewy-font text-center mb-6 text-gray-900">Projects</h1>
+        <p class="text-center text-gray-700">Projects section coming soon!</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white text-gray-600 px-8 md:px-20 py-10 mt-10 shadow-inner">
+    <div class="flex flex-col md:flex-row justify-between items-center">
+      <p>&copy; 2025 TeamTasks. All rights reserved.</p>
+      <div class="flex space-x-4 mt-4 md:mt-0">
+        <a href="#" class="hover:underline">Privacy</a>
+        <a href="#" class="hover:underline">Terms</a>
+        <a href="#" class="hover:underline">Support</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script -->
+  <script>
+    let teamMembers = {
+      Ayesha: "https://i.pravatar.cc/40?img=5",
+      Rahul: "https://i.pravatar.cc/40?img=11",
+      Zoya: "https://i.pravatar.cc/40?img=20",
+    };
+
+    const priorityColors = {
+      High: "bg-red-500",
+      Medium: "bg-yellow-500",
+      Low: "bg-green-500",
+    };
+
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    let activeFilter = "all";
+    let searchQuery = "";
+
+    const taskForm = document.getElementById("taskForm");
+    const taskList = document.getElementById("taskList");
+    const assignedToSelect = document.getElementById("assignedTo");
+    const newMemberInput = document.getElementById("newMemberInput");
+    const addMemberBtn = document.getElementById("addMemberBtn");
+    const teamMembersContainer = document.getElementById("teamMembersContainer");
+
+    const dashboardSection = document.getElementById("dashboardSection");
+    const teamSection = document.getElementById("teamSection");
+    const projectsSection = document.getElementById("projectsSection");
+
+    const dashboardBtn = document.getElementById("dashboardBtn");
+    const teamBtn = document.getElementById("teamBtn");
+    const projectsBtn = document.getElementById("projectsBtn");
+
+    function updateAssignedToOptions() {
+      assignedToSelect.innerHTML = '<option value="" disabled selected>Assign to</option>';
+      Object.keys(teamMembers).forEach(member => {
+        const option = document.createElement("option");
+        option.value = member;
+        option.textContent = member;
+        assignedToSelect.appendChild(option);
+      });
+    }
+
+    function renderTeamMembers() {
+      teamMembersContainer.innerHTML = "";
+      Object.entries(teamMembers).forEach(([name, avatar]) => {
+        const memberDiv = document.createElement("div");
+        memberDiv.className = "flex flex-col items-center bg-gray-50 p-4 rounded-lg shadow";
+        memberDiv.innerHTML = `
+          <img src="${avatar}" alt="${name}" class="w-20 h-20 rounded-full mb-3 object-cover" />
+          <h3 class="text-lg font-semibold">${name}</h3>
+        `;
+        teamMembersContainer.appendChild(memberDiv);
+      });
+    }
+
+    function showSection(sectionToShow) {
+      dashboardSection.classList.add("hidden");
+      teamSection.classList.add("hidden");
+      projectsSection.classList.add("hidden");
+      sectionToShow.classList.remove("hidden");
+    }
+
+    addMemberBtn.addEventListener("click", () => {
+      const newMemberName = newMemberInput.value.trim();
+      if (newMemberName === "") {
+        alert("Please enter a valid member name.");
+        return;
+      }
+      if (teamMembers[newMemberName]) {
+        alert("Member already exists.");
+        return;
+      }
+
+      const avatarUrl = `https://i.pravatar.cc/40?u=${encodeURIComponent(newMemberName)}`;
+      teamMembers[newMemberName] = avatarUrl;
+      updateAssignedToOptions();
+      newMemberInput.value = "";
+
+      // ✅ In-page message instead of alert
+      const messageDiv = document.createElement("div");
+      messageDiv.textContent = `Added new member: ${newMemberName}`;
+      messageDiv.className = "bg-green-100 text-green-800 p-2 mt-2 rounded shadow text-sm";
+      addMemberBtn.parentElement.appendChild(messageDiv);
+      setTimeout(() => messageDiv.remove(), 3000);
+
+      if (!teamSection.classList.contains("hidden")) {
+        renderTeamMembers();
+      }
+    });
+
+    taskForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const title = document.getElementById("taskTitle").value;
+      const assignedTo = assignedToSelect.value;
+      const priority = document.getElementById("priority").value;
+
+      if (!assignedTo) {
+        alert("Please assign the task to a member.");
+        return;
+      }
+
+      const task = {
+        id: Date.now(),
+        title,
+        assignedTo,
+        priority,
+        completed: false,
+      };
+
+      tasks.push(task);
+      saveAndRenderTasks();
+      taskForm.reset();
+      assignedToSelect.selectedIndex = 0;
+    });
+
+    function saveAndRenderTasks() {
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+      renderTasks();
+    }
+
+    function renderTasks() {
+      taskList.innerHTML = "";
+      const filteredTasks = tasks.filter(task => {
+        const matchesFilter = activeFilter === "all" ||
+          (activeFilter === "completed" && task.completed) ||
+          (activeFilter === "pending" && !task.completed);
+        const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesFilter && matchesSearch;
+      });
+
+      filteredTasks.forEach(task => {
+        const taskCard = document.createElement("div");
+        taskCard.className = "bg-white p-4 rounded shadow flex justify-between items-center";
+
+        taskCard.innerHTML = `
+          <div class="flex items-center gap-4">
+            <input type="checkbox" class="task-done-checkbox accent-green-600 w-5 h-5" ${task.completed ? "checked" : ""} />
+            <img src="${teamMembers[task.assignedTo] || 'https://i.pravatar.cc/40?u=default'}" class="w-10 h-10 rounded-full" />
+            <div>
+              <h3 class="font-semibold task-title ${task.completed ? 'line-through text-gray-400' : ''}">${task.title}</h3>
+              <p class="text-sm text-gray-600">Assigned to: ${task.assignedTo}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-white px-3 py-1 rounded text-sm ${priorityColors[task.priority]}">${task.priority}</span>
+            <button class="edit-task text-blue-500 hover:text-blue-700 text-xl">✏️</button>
+            <button class="delete-task text-red-500 hover:text-red-700 text-xl">🗑️</button>
+          </div>
+        `;
+
+        taskCard.querySelector(".task-done-checkbox").addEventListener("change", () => {
+          task.completed = !task.completed;
+          saveAndRenderTasks();
+        });
+
+        taskCard.querySelector(".delete-task").addEventListener("click", () => {
+          tasks = tasks.filter(t => t.id !== task.id);
+          saveAndRenderTasks();
+        });
+
+        taskCard.querySelector(".edit-task").addEventListener("click", () => {
+          const newTitle = prompt("Edit task title", task.title);
+          if (newTitle) {
+            task.title = newTitle;
+            saveAndRenderTasks();
+          }
+        });
+
+        taskList.appendChild(taskCard);
+      });
+    }
+
+    document.querySelectorAll(".filter-btn").forEach(button => {
+      button.addEventListener("click", () => {
+        activeFilter = button.dataset.filter;
+        renderTasks();
+      });
+    });
+
+    document.getElementById("searchInput").addEventListener("input", e => {
+      searchQuery = e.target.value;
+      renderTasks();
+    });
+
+    dashboardBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      showSection(dashboardSection);
+      dashboardBtn.classList.add("font-semibold");
+      teamBtn.classList.remove("font-semibold");
+      projectsBtn.classList.remove("font-semibold");
+    });
+
+    teamBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      showSection(teamSection);
+      renderTeamMembers();
+      dashboardBtn.classList.remove("font-semibold");
+      teamBtn.classList.add("font-semibold");
+      projectsBtn.classList.remove("font-semibold");
+    });
+
+    projectsBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      showSection(projectsSection);
+      dashboardBtn.classList.remove("font-semibold");
+      teamBtn.classList.remove("font-semibold");
+      projectsBtn.classList.add("font-semibold");
+    });
+
+    // Initialize
+    updateAssignedToOptions();
+    renderTasks();
+    showSection(dashboardSection);
+  </script>
+</body>
+</html>
